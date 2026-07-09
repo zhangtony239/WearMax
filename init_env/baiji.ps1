@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     小米手表一代环境自动初始化脚本 (baiji.ps1)
 .DESCRIPTION
@@ -6,6 +6,7 @@
       1. 检测电脑上是否安装 scrcpy，未安装则提示用户自行下载并加入 PATH。
       2. 遍历第三方应用 (pm list package -3) 并全部 adb uninstall。
       3. 遍历 USELESS_SYS_APPS 列表，逐个 adb shell pm uninstall --user 0。
+      4. 应用系统配置: svc 服务开关与 settings 属性 (NFC/数据/飞行模式/定位/屏保)。
 .NOTES
     需在管理员或普通 PowerShell 中以具备 adb 调试权限的环境运行。
 #>
@@ -30,16 +31,26 @@ $ErrorActionPreference = 'Stop'
 # 无用系统应用包名列表 (按需增删)
 # 这些通常是小米手表一代中可安全对当前用户禁用的预装系统应用
 $USELESS_SYS_APPS = @(
-    'com.android.wallpaper.livepicker',     # 动态壁纸选择器 (手表无用)
-    'com.android.providers.calendar',       # 日历提供程序
-    'com.android.providers.media.modules',  # 媒体模块 (按需)
-    'com.miui.calculator',                 # 小米计算器
-    'com.miui.notes',                       # 小米便签
-    'com.miui.weather2',                    # 小米天气
-    'com.miui.personalassistant',           # 智能助理 / 负一屏
-    'com.miui.analytics',                   # 小米用户体验计划
-    'com.xiaomi.market',                    # 应用商店 (手表端)
-    'com.xiaomi.simactivate.service'        # SIM 激活服务 (手表多无 SIM)
+    'com.google.android.wearable.setupwizard',  # 跳过出厂配对
+    'com.google.android.gms',                   # GMS服务
+    'com.xiaomi.wear.tutorial',                 # 玩机教程
+    'com.xiaomi.wear.calculator',               # 计算器
+    'com.xiaomi.wear.notes',                    # 便签
+    'com.xiaomi.wear.weather',                  # 天气
+    'com.xiaomi.wear.fitness',                  # 小米运动健康
+    'com.xiaomi.wear.recorder',                 # 录音机
+    'com.xiaomi.wear.sound.meter',              # 分贝仪
+    'com.xiaomi.wear.pressure',                 # 气压计
+    'com.xiaomi.wear.compass',                  # 指南针
+    'com.xiaomi.wear.deskclock',                # 时钟
+    'com.xiaomi.wear.card',                     # 卡包
+    'com.xiaomi.wear.camera',                   # 相机(beta)
+    'com.xiaomi.wear.market',                   # 应用商店+表盘商店
+    'com.xiaomi.wear.xiaoai',                   # 小爱同学
+    'com.xiaomi.wear.anonymous.xiaoai',         # 小爱TTS
+    'com.xiaomi.mihome',                        # 米家
+    'com.google.android.wearable.ambient',      # 微光显示
+    'com.google.android.clockwork.flashlight'   # 手电筒
 )
 
 # ---------------------------------------------------------------------------
@@ -98,7 +109,8 @@ function Test-Scrcpy {
 # 确认已连接的小米手表设备
 function Confirm-Device {
     Write-Info '检测已连接的 adb 设备...'
-    $devices = (& adb devices) | Where-Object { $_ -match '\bdevice\b' }
+    # 用 @(...) 强制数组上下文, 避免单设备时返回标量字符串导致 StrictMode 下 .Count 报错
+    $devices = @((& adb devices) | Where-Object { $_ -match '\bdevice\b' })
 
     if ($null -eq $devices -or $devices.Count -eq 0) {
         Write-Err '未检测到处于 "device" 状态的设备。'
@@ -124,12 +136,12 @@ function Uninstall-ThirdPartyApps {
         return
     }
 
-    # 解析出包名 (行格式: package:com.xxx.xxx)
-    $packages = $rawLines |
+    # 解析出包名 (行格式: package:com.xxx.xxx); 用 @(...) 强制数组上下文
+    $packages = @($rawLines |
         Where-Object { $_ -match '^package:' } |
-        ForEach-Object { ($_ -replace '^package:', '').Trim() }
+        ForEach-Object { ($_ -replace '^package:', '').Trim() })
 
-    if ($packages.Count -eq 0) {
+    if ($null -eq $packages -or $packages.Count -eq 0) {
         Write-Ok '没有第三方应用需要卸载。'
         return
     }
@@ -195,6 +207,41 @@ function Uninstall-UselessSysApps {
 }
 
 # ---------------------------------------------------------------------------
+# 阶段 4: 系统配置 (svc 服务开关 / settings 属性)
+# ---------------------------------------------------------------------------
+
+function Apply-SystemConfig {
+    # 配置项清单: Command 为 "adb shell" 之后要执行的命令; Desc 为用途说明
+    $configItems = @(
+        [pscustomobject]@{ Command = 'svc nfc disable';                                     Desc = '关闭 NFC' }
+        [pscustomobject]@{ Command = 'svc data disable';                                    Desc = '关闭移动数据' }
+        [pscustomobject]@{ Command = 'settings put global airplane_mode_on 1';              Desc = '开启飞行模式' }
+        [pscustomobject]@{ Command = 'settings put global location_global_kill_switch 1';   Desc = '全局关闭定位' }
+        [pscustomobject]@{ Command = 'settings put secure screensaver_enabled 0';          Desc = '关闭屏保/休眠壁纸' }
+    )
+
+    Write-Info "开始应用系统配置，共 $($configItems.Count) 项..."
+    $success = 0
+    $failed  = 0
+
+    foreach ($item in $configItems) {
+        Write-Host "  -> $($item.Command)  ($($item.Desc))" -NoNewline
+        # 将命令按空白拆分后通过 splatting 传给 adb shell, 确保各参数被独立传递
+        $shellArgs = $item.Command -split '\s+'
+        & adb shell @shellArgs *> $null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host '  [成功]' -ForegroundColor Green
+            $success++
+        } else {
+            Write-Host '  [失败]' -ForegroundColor Red
+            $failed++
+        }
+    }
+
+    Write-Ok "系统配置完成: 成功 $success / 失败 $failed / 总计 $($configItems.Count)。"
+}
+
+# ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
 
@@ -202,7 +249,7 @@ function Main {
     Write-Host ''
     Write-Host '================================================' -ForegroundColor White
     Write-Host '  小米手表一代 环境自动初始化脚本 (baiji.ps1)' -ForegroundColor White
-    Write-Host '  阶段一: 依赖检测 / 第三方应用卸载 / 系统精简'   -ForegroundColor White
+    Write-Host '  阶段一: 依赖检测 / 应用卸载 / 系统精简 / 配置' -ForegroundColor White
     Write-Host '================================================' -ForegroundColor White
     Write-Host ''
 
@@ -221,6 +268,9 @@ function Main {
 
     # 3) 卸载无用系统应用
     Uninstall-UselessSysApps -Apps $USELESS_SYS_APPS
+
+    # 4) 应用系统配置 (svc / settings)
+    Apply-SystemConfig
 
     Write-Host ''
     Write-Ok '阶段一初始化全部完成。'
