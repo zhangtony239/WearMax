@@ -33,20 +33,27 @@ banner() {
 banner "WearMax Termux 环境初始化"
 
 # ---------- 1. 预检 /sdcard 下的文件 ----------
-banner "步骤 1/4  检查 /sdcard 下的部署文件"
+banner "步骤 1/5  检查 /sdcard 下的部署文件"
 need_file termux.properties
 need_file zeroclaw
 need_file finish-setup.sh
 
 # ---------- 2. 更新 & 升级 ----------
-banner "步骤 2/4  更新软件包列表并升级系统"
+banner "步骤 2/5  更新软件包列表并升级系统"
 pkg update -y
 info "更新索引完成，开始升级（对配置文件提示一律选 Y）"
 yes Y | pkg upgrade -y
 ok "升级完成"
 
-# ---------- 3. 复制配置文件到对应位置 ----------
-banner "步骤 3/4  部署配置文件"
+# ---------- 3. 安装 tur-repo / termux-api / Python 环境 ----------
+banner "步骤 3/5  安装 tur-repo / termux-api / Python 环境"
+pkg install -y tur-repo termux-api
+pkg update -y
+pkg install -y python3.11 python-is-python3.11 uv
+ok "tur-repo / termux-api / Python 3.11 / uv 安装完成"
+
+# ---------- 4. 复制配置文件到对应位置 ----------
+banner "步骤 4/5  部署配置文件"
 
 # termux.properties ->  ~/.termux/
 mkdir -p ~/.termux
@@ -59,8 +66,8 @@ cp -f "$SRC/finish-setup.sh" ~/finish-setup.sh
 ok "zeroclaw            ->  ~/"
 ok "finish-setup.sh     ->  ~/"
 
-# ---------- 4. 赋予执行权限 & 重载设置 ----------
-banner "步骤 4/4  赋予执行权限并重载设置"
+# ---------- 5. 赋予执行权限 & 重载设置 ----------
+banner "步骤 5/5  赋予执行权限并重载设置"
 chmod +x ~/zeroclaw
 chmod +x ~/finish-setup.sh
 ok "zeroclaw / finish-setup.sh 已可执行"
