@@ -16,6 +16,7 @@
         5. 将 zeroclaw 二进制 adb push 到手表 /sdcard/ 下。
         6. 将项目内 termux/ 文件夹下的全部内容 adb push 到手表 /sdcard/ 下。
         7. 提示用户自行跟随 setup.md 在手表 Termux 内完成 zeroclaw 配置。
+        8. 部署完成后清理本地缓存目录 .install/ (释放磁盘空间, 避免污染项目根)。
 .NOTES
     需在 PowerShell 5.1+ 运行; Windows 10 (1803+) / Windows 11 自带 tar.exe 用于解压 tar.gz。
 #>
@@ -448,6 +449,23 @@ function Main {
     Write-Info "推送手表侧脚本目录: $TermuxDir -> /sdcard/"
     if (-not (Push-Directory -LocalDir $TermuxDir -RemoteDir '/sdcard')) {
         exit 1
+    }
+
+    # ===================================================================
+    # 清理本地缓存目录 .install/
+    # ===================================================================
+    Write-Host ''
+    Write-Info '清理本地缓存目录...'
+    if (Test-Path -LiteralPath $CacheDir) {
+        try {
+            Remove-Item -Path $CacheDir -Recurse -Force -ErrorAction Stop
+            Write-Ok "已删除缓存目录: $CacheDir"
+        } catch {
+            Write-Warn "清理缓存目录失败, 可手动删除: $CacheDir"
+            Write-Host "  原因: $($_.Exception.Message)" -ForegroundColor DarkGray
+        }
+    } else {
+        Write-Ok "缓存目录已不存在, 无需清理: $CacheDir"
     }
 
     # ===================================================================
