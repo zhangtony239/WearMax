@@ -49,8 +49,8 @@ ok "升级完成"
 banner "步骤 3/5  安装 tur-repo / termux-api / Python 环境"
 pkg install -y tur-repo termux-api
 pkg update -y
-pkg install -y python3.11 python-is-python3.11 uv
-ok "tur-repo / termux-api / Python 3.11 / uv 安装完成"
+pkg install -y python3.11 python-is-python3.11
+ok "tur-repo / termux-api / Python 3.11 安装完成"
 
 # ---------- 4. 复制配置文件到对应位置 ----------
 banner "步骤 4/5  部署配置文件"
