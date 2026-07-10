@@ -11,3 +11,7 @@ wheels/
 
 # Install cache (downloaded resources / extracted binaries)
 .install/
+
+# WearMax 传感器采集测试输出（运行时数据，勿提交）
+sensor_test.txt
+sensor_test_*.txt
