@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Install cache (downloaded resources / extracted binaries)
+.install/

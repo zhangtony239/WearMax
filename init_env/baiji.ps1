@@ -50,7 +50,9 @@ $USELESS_SYS_APPS = @(
     'com.xiaomi.wear.anonymous.xiaoai',         # 小爱TTS
     'com.xiaomi.mihome',                        # 米家
     'com.google.android.wearable.ambient',      # 微光显示
-    'com.google.android.clockwork.flashlight'   # 手电筒
+    'com.google.android.clockwork.flashlight',  # 手电筒
+    'com.google.android.apps.handwriting.ime',  # 手写输入法
+    'com.google.android.inputmethod.pinyin'     # Google拼音输入法
 )
 
 # ---------------------------------------------------------------------------
@@ -272,8 +274,22 @@ function Main {
     # 4) 应用系统配置 (svc / settings)
     Apply-SystemConfig
 
-    Write-Host ''
-    Write-Ok '阶段一初始化全部完成。'
+    # 询问是否继续安装 WearMax
+    $installScript = Join-Path $PSScriptRoot '..\install.ps1'
+    Write-Host "环境初始化完成，是否继续安装 WearMax？ (Y/n)" -NoNewline -ForegroundColor Yellow
+    $answer = Read-Host
+
+    if ($answer -eq '' -or $answer -match '^[Yy]') {
+        if (Test-Path -LiteralPath $installScript) {
+            Write-Info "启动安装脚本: $installScript"
+            & $installScript
+        } else {
+            Write-Err "未找到安装脚本: $installScript"
+        }
+    } else {
+        Write-Info '已跳过 WearMax 安装。'
+    }
+
     Write-Host ''
 }
 
