@@ -193,10 +193,40 @@ function Expand-ZeroclawArchive {
 # adb 部署相关工具函数
 # ---------------------------------------------------------------------------
 
+# 统一执行 adb 命令的 helper:
+#   - 局部降级 ErrorActionPreference 为 Continue, 避免 PS5.1 在 Stop 模式下
+#     把 adb 写入 stderr 的进度/提示信息当作 NativeCommandError 终止脚本。
+#   - 用 2>&1 合并 stderr, 逐行回显给用户, 仍可正常检查 $LASTEXITCODE。
+function Invoke-AdbCommand {
+    param([parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        # 将 stderr 合并到 stdout 后捕获为对象数组, 逐行回显
+        $output = & adb @Args 2>&1
+        foreach ($line in $output) {
+            if ($null -ne $line) {
+                Write-Host "  $line" -ForegroundColor DarkGray
+            }
+        }
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
+    return $LASTEXITCODE
+}
+
 # 获取已就绪 (state=device) 的 adb 设备 id 列表; 排除 unauthorized/offline
 function Get-AdbDevices {
-    # 合并 stderr 到 stdout, 避免 PS5.1 在 Stop 模式下因原生命令 stderr 而终止
-    $output = & adb devices 2>&1
+    # 局部降级 ErrorActionPreference, 避免 PS5.1 在 Stop 模式下把 adb 写入
+    # stderr 的 daemon 启动信息当作 NativeCommandError 终止脚本。
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & adb devices 2>&1
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
     $devices = @()
     foreach ($line in $output) {
         if ($line -is [string]) {
@@ -221,11 +251,9 @@ function Install-Apk {
         Write-Err "APK 文件不存在: $ApkPath"
         return $false
     }
-    & adb install -r "$ApkPath" 2>&1 | ForEach-Object {
-        Write-Host "  $_" -ForegroundColor DarkGray
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Err "adb install 失败 (退出码 $LASTEXITCODE): $ApkPath"
+    $code = Invoke-AdbCommand install -r "$ApkPath"
+    if ($code -ne 0) {
+        Write-Err "adb install 失败 (退出码 $code): $ApkPath"
         return $false
     }
     Write-Ok "  安装成功: $ApkPath"
@@ -239,11 +267,9 @@ function Push-File {
         Write-Err "本地文件不存在: $LocalPath"
         return $false
     }
-    & adb push "$LocalPath" "$RemotePath" 2>&1 | ForEach-Object {
-        Write-Host "  $_" -ForegroundColor DarkGray
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Write-Err "adb push 失败 (退出码 $LASTEXITCODE): $LocalPath -> $RemotePath"
+    $code = Invoke-AdbCommand push "$LocalPath" "$RemotePath"
+    if ($code -ne 0) {
+        Write-Err "adb push 失败 (退出码 $code): $LocalPath -> $RemotePath"
         return $false
     }
     Write-Ok "  推送成功: $LocalPath -> $RemotePath"
@@ -262,7 +288,8 @@ function Push-Directory {
     }
 
     # 收集所有文件 (含子目录), 用平铺列表逐个推送
-    $files = Get-ChildItem -Path $LocalDir -Recurse -File
+    # 用 @(...) 强制数组上下文, 避免单文件/空结果在 StrictMode 下 .Count 报错
+    $files = @(Get-ChildItem -Path $LocalDir -Recurse -File)
     if ($null -eq $files -or $files.Count -eq 0) {
         Write-Warn "本地目录为空, 跳过推送: $LocalDir"
         return $true
@@ -275,11 +302,9 @@ function Push-Directory {
         $rel = $f.FullName.Substring($LocalDir.Length).TrimStart('\','/') -replace '\\','/'
         $remotePath = "$RemoteDir/$rel"
         Write-Info "推送 $($f.FullName) -> $remotePath"
-        & adb push "$($f.FullName)" "$remotePath" 2>&1 | ForEach-Object {
-            Write-Host "  $_" -ForegroundColor DarkGray
-        }
-        if ($LASTEXITCODE -ne 0) {
-            Write-Err "  推送失败 (退出码 $LASTEXITCODE): $($f.FullName) -> $remotePath"
+        $code = Invoke-AdbCommand push "$($f.FullName)" "$remotePath"
+        if ($code -ne 0) {
+            Write-Err "  推送失败 (退出码 $code): $($f.FullName) -> $remotePath"
             $ok = $false
         }
     }
@@ -383,8 +408,10 @@ function Main {
 
     # 1) 启动 adb server 并检测已连接设备
     Write-Info '启动 adb server 并检测已连接设备...'
-    & adb start-server 2>&1 | Out-Null
-    $devices = Get-AdbDevices
+    # 用统一 helper 降级 ErrorActionPreference, 避免 adb stderr 触发终止错误
+    Invoke-AdbCommand start-server | Out-Null
+    # 用 @(...) 强制数组上下文, 避免单设备/空结果在 StrictMode 下 .Count 报错
+    $devices = @(Get-AdbDevices)
     if ($devices.Count -eq 0) {
         Write-Err '未检测到就绪的 Android 设备。'
         Write-Host '  请确认:' -ForegroundColor Yellow
@@ -427,7 +454,7 @@ function Main {
     # 完成: 引导用户进入下一阶段
     # ===================================================================
     Write-Host ''
-    Write-Ok 'WearMax 安装部署阶段全部完成。'
+    Write-Ok 'WearMax 电脑侧安装阶段全部完成。'
     Write-Host ''
     Write-Host '下一步操作 (请在手表上完成):' -ForegroundColor White
     Write-Host '  1. 在手表上打开 Termux 应用。' -ForegroundColor White
