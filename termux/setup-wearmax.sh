@@ -32,22 +32,11 @@ banner() {
 
 banner "WearMax Termux 环境初始化"
 
-# ---------- 0. 预检 /sdcard 下的文件 ----------
-banner "步骤 0/4  检查 /sdcard 下的部署文件"
+# ---------- 1. 预检 /sdcard 下的文件 ----------
+banner "步骤 1/4  检查 /sdcard 下的部署文件"
 need_file termux.properties
 need_file zeroclaw
 need_file finish-setup.sh
-
-# ---------- 1. 换阿里云源（http） ----------
-banner "步骤 1/4  切换 Termux 软件源为阿里云镜像"
-SRC_LIST="$PREFIX/etc/apt/sources.list"
-if grep -q "mirrors.aliyun.com" "$SRC_LIST" 2>/dev/null; then
-    info "已是阿里云源，跳过"
-else
-    # 把原有 stable 源注释掉，并追加阿里云源（http，兼容旧版 Termux）
-    sed -i 's@^\(deb.*stable main\)$@#\1\ndeb http://mirrors.aliyun.com/termux/termux-packages-24 stable main@' "$SRC_LIST"
-    ok "已写入阿里云源"
-fi
 
 # ---------- 2. 更新 & 升级 ----------
 banner "步骤 2/4  更新软件包列表并升级系统"
