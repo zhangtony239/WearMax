@@ -51,7 +51,6 @@ $USELESS_SYS_APPS = @(
     'com.xiaomi.mihome',                        # 米家
     'com.google.android.wearable.ambient',      # 微光显示
     'com.google.android.clockwork.flashlight',  # 手电筒
-    'com.iflytek.inputmethod.wear.xiaomi',      # 讯飞输入法
     'com.google.android.apps.handwriting.ime',  # Google手写输入法
     'com.google.android.inputmethod.pinyin'     # Google拼音输入法
 )
