@@ -450,8 +450,16 @@ function Main {
     # 先清理旧的 whl，避免版本残留
     Get-ChildItem -Path $TermuxDir -Filter 'wearmax-*.whl' -ErrorAction SilentlyContinue |
         Remove-Item -Force -ErrorAction SilentlyContinue
-    # 直接调用 uv（输出合并到控制台，便于排错）
-    & uv build --wheel --out-dir "$TermuxDir" 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    # uv 把进度信息写到 stderr，PowerShell 在 ErrorActionPreference=Stop 下会将其当作
+    # NativeCommandError 终止脚本。临时切换为 Continue，合并 2>&1 逐行回显，再检查退出码。
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & uv build --wheel --out-dir "$TermuxDir" 2>&1
+        foreach ($line in $output) { Write-Host "  $line" -ForegroundColor DarkGray }
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Err "构建 WearMax wheel 失败 (uv build 退出码 $LASTEXITCODE)"
         Write-Host "  请确认已执行 uv sync 安装依赖" -ForegroundColor DarkGray
