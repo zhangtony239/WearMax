@@ -89,7 +89,7 @@ uv run pytest tests/ -v   # 18 passed
 
 | 脚本 | 时机 | WearMax 相关动作 |
 |------|------|------------------|
-| [`termux/setup-wearmax.sh`](termux/setup-wearmax.sh) | zeroclaw onboard 前 | 步骤4/6：`pkg install pipx` + `pipx install wearmax-*.whl`（依赖自动从 PyPI 拉）；复制 `sensor_test.py` 到 `~/` |
+| [`termux/setup-wearmax.sh`](termux/setup-wearmax.sh) | zeroclaw onboard 前 | 步骤4/6：`pkg install uv` + `uv tool install --force wearmax-*.whl`（依赖自动从 PyPI 拉，console_scripts 暴露到 `~/.local/bin`）；复制 `sensor_test.py` 到 `~/` |
 | [`termux/finish-setup.sh`](termux/finish-setup.sh) | zeroclaw onboard 后 | 步骤2/4：复制 `skills/get_hr/` → `~/.zeroclaw/workspace/skills/`；步骤3/4：验证 `hr-get` 命令可用 |
 
 ### 6.3 日常运行（用户零操作）

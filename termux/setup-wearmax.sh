@@ -4,6 +4,7 @@
 # 前置条件：termux.properties / zeroclaw / finish-setup.sh
 #           wearmax-*.whl / sensor_test.py / skills/
 #           已通过 adb push 放到 /sdcard/ 下
+# 安装方式：pkg install uv → uv tool install wearmax-*.whl（不依赖 pipx）
 
 set -e
 
@@ -62,17 +63,28 @@ pkg update -y
 pkg install -y python3.11 python-is-python3.11
 ok "tur-repo / termux-api / Python 3.11 安装完成"
 
-# ---------- 4. pipx 安装 WearMax 包 ----------
-banner "步骤 4/6  pipx 安装 WearMax（whl + 依赖）"
-pkg install -y pipx
-info "pipx 安装 WearMax whl 及其依赖（numpy/scipy/pandas/pyPPG 等，首次较慢）"
-pipx install "$whl"
+# ---------- 4. uv 安装 WearMax 包 ----------
+banner "步骤 4/6  uv 安装 WearMax（whl + 依赖）"
+# Termux 官方源提供 uv（有预编译 arm 二进制），无需 pipx
+pkg install -y uv
+info "uv 安装 WearMax whl 及其依赖（numpy/scipy/pandas/pyPPG 等，首次较慢）"
+# uv tool install 把 whl 装进隔离环境，自动暴露 console_scripts（hr-get 等）
+# 首次需 --force：若已装过旧版则覆盖
+uv tool install --force "$whl"
 ok "WearMax 已安装，可用命令：hr-get / hr-daemon / hr-server / wearmax"
+# uv tool 的 bin 目录默认 ~/.local/bin，确保在 PATH 中
+UV_BIN="$HOME/.local/bin"
+case ":$PATH:" in
+    *":$UV_BIN:"*) ;;
+    *) info "将 $UV_BIN 加入 PATH（~/.bashrc）"
+       echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> ~/.bashrc
+       export PATH="$UV_BIN:$PATH" ;;
+esac
 # 验证 console script 可用
 if command -v hr-get >/dev/null 2>&1; then
     ok "hr-get 命令验证通过"
 else
-    err "hr-get 未找到，pipx 可能未加入 PATH，请执行 pipx ensurepath 后重开 Termux"
+    err "hr-get 未找到，请执行 export PATH=\$HOME/.local/bin:\$PATH 后重试，或重开 Termux"
 fi
 # sensor_test.py 是纯标准库脚本，直接放到 ~/
 cp -f "$SRC/sensor_test.py" ~/sensor_test.py
@@ -118,7 +130,7 @@ printf "   onboard 走完后，执行：\033[33m~/finish-setup.sh\033[0m\n"
 printf "   它会部署 hr-get 工具说明并验证 WearMax 命令。\n\n"
 
 printf "\033[1m4. 日常运行\033[0m\n"
-printf "   本步骤已用 pipx 安装 WearMax whl（hr-get / hr-daemon / hr-server / wearmax）。\n"
+printf "   本步骤已用 uv tool install 安装 WearMax whl（hr-get / hr-daemon / hr-server / wearmax）。\n"
 printf "   收尾完成后，每次 Termux 登录超时会自动启动 \033[33mwearmax\033[0m，\n"
 printf "   由它拉起 zeroclaw daemon + hr-daemon + hr-server 三进程。\n\n"
 

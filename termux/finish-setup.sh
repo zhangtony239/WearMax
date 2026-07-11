@@ -75,8 +75,8 @@ banner "步骤 3/4  验证 WearMax 命令"
 if command -v hr-get >/dev/null 2>&1; then
     ok "hr-get 命令可用"
 else
-    err "hr-get 未找到，可能是 setup-wearmax.sh 未执行或 pipx PATH 未生效"
-    info "请执行 pipx ensurepath 后重开 Termux，再重试 ~/finish-setup.sh"
+    err "hr-get 未找到，可能是 setup-wearmax.sh 未执行或 PATH 未生效"
+    info "请执行 export PATH=\$HOME/.local/bin:\$PATH 后重开 Termux，再重试 ~/finish-setup.sh"
 fi
 
 # ---------- 4. 申请唤醒锁 ----------
