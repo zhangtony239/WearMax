@@ -1,7 +1,39 @@
 [project]
 name = "wearmax"
 version = "0.1.0"
-description = "Add your description here"
+description = "WearMax — 手表端全天候健康守护智能体（PPG 采集 / PyPPG 处理 / AI 取数）"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    # 仪表盘（hr.server，本期 stub）
+    "streamlit>=1.40",
+    # PPG 信号处理（hr.data_process）—— 注意 PyPI 包名是 pyPPG
+    "pyPPG>=1.0",
+    # pyPPG 依赖 DotMap 构造信号结构体
+    "dotmap>=1.3",
+    # 数值 / 表格
+    "numpy>=1.26",
+    "pandas>=2.1",
+]
+
+[project.scripts]
+# hr.get 工具：zeroclaw 走 shell 调用，读 CSV 直接返回 JSON 给 AI
+hr-get = "hr.get:main"
+# 三个常驻进程各自的 console_script（方便 main 统一拉起 / 手表直接调用）
+hr-daemon = "hr.daemon:main"
+hr-server = "hr.server:main"
+# 总起
+wearmax = "main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# src 布局：把 src/ 作为包根，安装后 main 为顶层模块、hr 为顶层包。
+[tool.hatch.build.targets.wheel]
+only-include = ["src/hr", "src/main.py"]
+sources = ["src"]
+
+[tool.hatch.build.targets.wheel.force-include]
+# 采集脚本与说明随包发布
+"termux/sensor_test.py" = "termux/sensor_test.py"
