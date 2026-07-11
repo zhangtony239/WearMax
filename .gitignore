@@ -15,3 +15,9 @@ wheels/
 # WearMax 传感器采集测试输出（运行时数据，勿提交）
 sensor_test.txt
 sensor_test_*.txt
+
+# 运行数据目录
+data/
+
+# pytest 缓存
+.pytest_cache/
