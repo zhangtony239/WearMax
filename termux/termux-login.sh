@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "提示：按 [回车键] 进入普通命令行，否则 1 秒后自动启动守护进程..."
+echo "提示：按 [回车键] 进入普通命令行，否则 1 秒后自动启动 WearMax..."
 
 # 保存当前的终端设置
 OLD_STTY=$(stty -g)
@@ -20,6 +20,7 @@ if [ -n "$CHAR" ]; then
     echo "\r\n已检测到按键，正在进入 Bash..."
     exec bash
 else
-    echo "\r\n超时未响应，正在启动 zeroclaw daemon..."
-    exec ~/zeroclaw daemon
+    echo "\r\n超时未响应，正在启动 WearMax（zeroclaw + hr-daemon + hr-server）..."
+    # wearmax（main.py）会拉起 zeroclaw daemon + hr-daemon + hr-server 三进程
+    exec wearmax
 fi

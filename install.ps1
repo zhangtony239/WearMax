@@ -445,6 +445,26 @@ function Main {
         exit 1
     }
 
+    # 4.5) 构建 WearMax whl 到 termux/ 目录（随 termux/ 一并 push）
+    Write-Info "构建 WearMax wheel -> termux/"
+    # 先清理旧的 whl，避免版本残留
+    Get-ChildItem -Path $TermuxDir -Filter 'wearmax-*.whl' -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+    # 直接调用 uv（输出合并到控制台，便于排错）
+    & uv build --wheel --out-dir "$TermuxDir" 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Err "构建 WearMax wheel 失败 (uv build 退出码 $LASTEXITCODE)"
+        Write-Host "  请确认已执行 uv sync 安装依赖" -ForegroundColor DarkGray
+        exit 1
+    }
+    $builtWhl = Get-ChildItem -Path $TermuxDir -Filter 'wearmax-*.whl' | Select-Object -First 1
+    if ($builtWhl) {
+        Write-Ok "已构建: $($builtWhl.Name)"
+    } else {
+        Write-Err "构建后未找到 termux/wearmax-*.whl"
+        exit 1
+    }
+
     # 5) 推送 termux/ 目录下全部内容到手表 /sdcard/
     Write-Info "推送手表侧脚本目录: $TermuxDir -> /sdcard/"
     if (-not (Push-Directory -LocalDir $TermuxDir -RemoteDir '/sdcard')) {

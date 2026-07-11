@@ -77,3 +77,21 @@ get_ppgSQI(s.filt_sig, s.fs, fp.sp) → 信号质量%
 uv run pytest tests/ -v   # 18 passed
 ```
 覆盖：FrameAssembler 帧拼装（真实 wear 数据）、CSV 读写、升采样、PyPPG 调用链路、降级路径。
+
+## 六、部署链路（whl 塞进 termux/ 随安装脚本 push）
+
+### 6.1 开发机构建
+[`install.ps1`](install.ps1) 在推送前自动执行 `uv build --wheel --out-dir termux`，
+生成的 `termux/wearmax-*.whl` 随 `termux/` 全目录一并 adb push 到手表 `/sdcard/`。
+（whl 是纯 Python `py3-none-any`，跨 armv7 架构可用。）
+
+### 6.2 手表 Termux 侧安装（分散在已有两个脚本）
+
+| 脚本 | 时机 | WearMax 相关动作 |
+|------|------|------------------|
+| [`termux/setup-wearmax.sh`](termux/setup-wearmax.sh) | zeroclaw onboard 前 | 步骤4/6：`pkg install pipx` + `pipx install wearmax-*.whl`（依赖自动从 PyPI 拉）；复制 `sensor_test.py` 到 `~/` |
+| [`termux/finish-setup.sh`](termux/finish-setup.sh) | zeroclaw onboard 后 | 步骤2/4：复制 `skills/get_hr/` → `~/.zeroclaw/workspace/skills/`；步骤3/4：验证 `hr-get` 命令可用 |
+
+### 6.3 日常运行（用户零操作）
+[`termux/termux-login.sh`](termux/termux-login.sh)：Termux 登录超时后 `exec wearmax`，
+由 main.py 拉起 zeroclaw daemon + hr-daemon + hr-server 三进程。用户只操作 zeroclaw 本身。
