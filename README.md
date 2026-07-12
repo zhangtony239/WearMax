@@ -63,6 +63,8 @@ My personal tech stack is honestly quite limited: my primary language is only Py
 
 > If any medical-major students want to develop this into a research project, feel free to [DM me](mailto:zt239@outlook.com)!
 
+Thanks to the [Linux.do platform](https://linux.do) for supporting the promotion of this project.
+
 ## ⚠️ Disclaimer
 
 > We currently lack the manpower and financial resources to pursue any medical certification! The project currently **does not have medical validity**! <br />
