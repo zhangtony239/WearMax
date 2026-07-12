@@ -63,7 +63,7 @@ WearMax 采用 `文件夹/设备代号.ps1` 的结构组织脚本——这样做
 
 > 若有医学专业的同学打算把这个发展成课题，欢迎[私信我](mailto:zt239@outlook.com)！
 
-感谢 [Linux.do 平台](https://linux.do) 对项目推广的支持。
+感谢 [Linux.do 平台](hhttps://linux.do/t/topic/2568993) 对项目推广的支持。
 
 ## ⚠️ 免责声明
 
