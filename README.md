@@ -1,67 +1,69 @@
 # ⌚ WearMax
 
-> 把吃灰的 armv7 WearOS 手表，变成一块能跑 AI Agent、能感知你心跳的「腕上电子吧唧」。
+English | [简体中文](README_zh.md)
 
-WearMax 是一套面向 **armv7 架构 WearOS 手表** 的全栈部署模板。它在精简后的系统上跑起 Termux + ZeroClaw Agent，并预留了读取手表心率/加速度/陀螺仪等生物数据的接口——朝着《超能陆战队》里 **大白（BayMax）** 的方向迈出第一步。
+> Turn a dusty armv7 WearOS watch into a "wrist-worn electronic badge" that runs an AI Agent and can sense your heartbeat.
 
-> 📖 详细的分阶段安装指引见 [`setup.md`](setup.md)。
+WearMax is a full-stack deployment template for **armv7-architecture WearOS watches**. It spins up Termux + ZeroClaw Agent on a slimmed-down system and leaves interfaces for reading biometric data from the watch's heart-rate sensor / accelerometer / gyroscope — taking the first step toward **BayMax** from *Big Hero 6*.
 
-## ✨ 它能做什么
+> 📖 For detailed, staged installation instructions see [`setup.md`](setup.md).
 
-WearMax 采用 `文件夹/设备代号.ps1` 的结构组织脚本——这样做的初衷是**让项目可以照顾到整个 armv7 WearOS 生态**，而不只是某一台手表。目前以小米手表一代（代号 **baiji**）作为首个适配实现：
+## ✨ What It Can Do
 
-### [`init_env/baiji.ps1`](init_env/baiji.ps1) — 环境初始化
+WearMax organizes its scripts in a `folder/device-codename.ps1` structure — the idea being to **cover the entire armv7 WearOS ecosystem**, not just one specific watch. Currently, the Xiaomi Watch 1st Gen (codename **baiji**) serves as the first adapted implementation:
 
-- 解决了手表**必须匹配手机才能使用**的问题。
-- 精简大量系统预装软件（采用 `pm uninstall --user 0`，不影响其它用户）。
-- 关闭 NFC / 移动数据 / 定位，开启飞行模式、关闭屏保，让手表变成一块纯净的 Linux 终端。
+### [`init_env/baiji.ps1`](init_env/baiji.ps1) — Environment Initialization
 
-### [`update_watchface/baiji.ps1`](update_watchface/baiji.ps1) — 相册表盘更新
+- Solves the problem that the watch **must be paired with a phone to be usable**.
+- Slims down a large amount of pre-installed system software (using `pm uninstall --user 0`, which does not affect other users).
+- Disables NFC / mobile data / location, enables airplane mode, and turns off the screensaver — turning the watch into a pure Linux terminal.
 
-- 解决了相册表盘**必须用 APP 更换背景**的问题。
-- 自动读取屏幕分辨率，校验图片尺寸，通过 adb 一键推送新表盘。
+### [`update_watchface/baiji.ps1`](update_watchface/baiji.ps1) — Photo Watch Face Update
 
-### [`install.ps1`](install.ps1) — 一键部署
+- Solves the problem that the photo watch face **requires an app to change its background**.
+- Automatically reads the screen resolution, validates the image dimensions, and pushes a new watch face via adb with a single click.
 
-- 通过 GitHub Releases API **动态解析**最新版本（不硬编码版本号），下载 `zeroclaw`（armv7 二进制）、`termux-app`、`termux-api`。
-- 通过 adb 把 Termux APK 安装到手表、把 zeroclaw 与 [`termux/`](termux/) 下的全部配置推送到 `/sdcard/`，最后清理本地缓存。
+### [`install.ps1`](install.ps1) — One-Click Deployment
 
-### `termux/` — 手表侧的初始化与守护
+- **Dynamically resolves** the latest version via the GitHub Releases API (no hardcoded version numbers), downloading `zeroclaw` (armv7 binary), `termux-app`, and `termux-api`.
+- Installs the Termux APK onto the watch via adb, pushes zeroclaw and all configurations under [`termux/`](termux/) to `/sdcard/`, and finally cleans up the local cache.
 
-| 文件 | 作用 |
-|------|------|
-| [`setup-wearmax.sh`](termux/setup-wearmax.sh) | 升级系统、安装 tur-repo / termux-api / Python 3.11，就位配置文件 |
-| [`finish-setup.sh`](termux/finish-setup.sh) | 就位登录脚本与 AI 人格文件，启用 `termux-wake-lock` 后台保活 |
-| [`termux-login.sh`](termux/termux-login.sh) | 开表即 AI：1 秒超时自动启动 `zeroclaw daemon`，按回车进入普通 Bash |
-| [`termux.properties`](termux/termux.properties) | 隐藏软键盘、竖线光标、配置 STOP / ENTER 快捷键 |
-| [`SOUL.md`](termux/SOUL.md) | AI 的「灵魂」——大白式全天候健康守护人格定义 |
-| [`IDENTITY.md`](termux/IDENTITY.md) | AI 的身份模板，留给用户在首次对话中填写 |
+### `termux/` — Watch-Side Initialization & Daemon
 
----
-
-## 🚀 安装
-
-完整的分阶段安装指引（前置条件、电脑侧部署、Termux 初始化、ZeroClaw 引导、收尾保活）见 👉 [`setup.md`](setup.md)。
-
-> 💡 如果手表还是全新出厂状态（被强制配对卡住），先跑 [`init_env/baiji.ps1`](init_env/baiji.ps1) 解除配对约束、精简系统，它会询问是否继续安装 WearMax。
+| File | Purpose |
+|------|---------|
+| [`setup-wearmax.sh`](termux/setup-wearmax.sh) | Upgrades the system, installs tur-repo / termux-api / Python 3.11, and places the configuration files |
+| [`finish-setup.sh`](termux/finish-setup.sh) | Places the login script and AI persona file, enables `termux-wake-lock` for background keep-alive |
+| [`termux-login.sh`](termux/termux-login.sh) | AI on boot: auto-starts `zeroclaw daemon` with a 1-second timeout; press Enter for a normal Bash shell |
+| [`termux.properties`](termux/termux.properties) | Hides the soft keyboard, sets the line cursor, and configures STOP / ENTER shortcuts |
+| [`SOUL.md`](termux/SOUL.md) | The AI's "soul" — a BayMax-style, round-the-clock health guardian persona definition |
+| [`IDENTITY.md`](termux/IDENTITY.md) | The AI's identity template, left for the user to fill in during the first conversation |
 
 ---
 
-## 💗 为什么是「大白」：心率传感器
+## 🚀 Installation
 
-翻开代码细节你会发现事情没那么简单——为什么标题里谈到《超能陆战队》里的大白？手表跑 Agent 有什么不可替代的优势？
+For the full, staged installation guide (prerequisites, PC-side deployment, Termux initialization, ZeroClaw bootstrap, and final keep-alive setup), see 👉 [`setup.md`](setup.md).
 
-答案在手表背后的**心率传感器**上。这块表的传感器经实测，其核心的 **PPG 传感器（心率）、加速度计、陀螺仪等均可通过 `termux-api` 读取**。这大概是十分罕见的一次，能让你心仪的 Agent 接触到真实生物数据的机会——还不需要忍受厂商那尚未完全对外开放的运动健康 API 和潜在限制。
+> 💡 If your watch is still in its factory-fresh state (stuck on forced pairing), run [`init_env/baiji.ps1`](init_env/baiji.ps1) first to remove the pairing constraint and slim down the system. It will ask whether to proceed with installing WearMax.
 
-理论上，自己实现数据算法，可以做到不止是官方只出的心率：后期手表才有的心电图、医疗参数指标没准也能搞出来……
+---
+
+## 💗 Why "BayMax": The Heart-Rate Sensor
+
+Dig into the code details and you'll find things aren't that simple — why does the title reference BayMax from *Big Hero 6*? What's the irreplaceable advantage of running an Agent on a watch?
+
+The answer lies in the **heart-rate sensor** on the back of the watch. Testing has confirmed that this watch's core **PPG sensor (heart rate), accelerometer, gyroscope, etc. can all be read via `termux-api`**. This is a rare opportunity to let your favorite Agent access real biometric data — without enduring the vendor's not-yet-fully-open sports & health API and its potential restrictions.
+
+In theory, by implementing your own data algorithms, you can achieve far more than just heart rate: features like ECG and medical-parameter metrics that only arrived on later watches might be within reach...
 
 ### ⚠️ NEED HELP
 
-我个人的技术栈实在有限：主力语言只修了 Python，Rust 尚未入门。考虑到手表这个内存与算力受限的场景…有没有好心的rust佬救一下qwq。半成品的 Python 实现已放在 [dev 分支](https://github.com/zhangtony239/WearMax/tree/dev)，感兴趣的可以去看看。
+My personal tech stack is honestly quite limited: my primary language is only Python, and I haven't gotten into Rust yet. Given the watch's memory- and compute-constrained scenario... is there a kind-hearted Rust dev who could lend a hand qwq? A half-finished Python implementation is available on the [dev branch](https://github.com/zhangtony239/WearMax/tree/dev) — those interested can take a look.
 
-> 若有医学专业的同学打算把这个发展成课题，欢迎[私信我](mailto:zt239@outlook.com)！
+> If any medical-major students want to develop this into a research project, feel free to [DM me](mailto:zt239@outlook.com)!
 
-## ⚠️ 免责声明
+## ⚠️ Disclaimer
 
-> 我们暂无人力财力去考虑任何的医疗资质认证！项目当前也**不具备医疗效力**！<br />
-> 若各位佬友有任何不适，请**及时就诊，谨遵医嘱**！
+> We currently lack the manpower and financial resources to pursue any medical certification! The project currently **does not have medical validity**! <br />
+> If any of you friends feel unwell, please **see a doctor promptly and follow medical advice**!
