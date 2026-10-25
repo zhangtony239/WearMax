@@ -13,7 +13,4 @@ wheels/
 .install/
 
 # Responsible Disclosure of CVE exploits
-exploit/CVE-2021-1905/*/
-exploit/CVE-2021-1905/*.py
-exploit/CVE-2021-1905/*.rs
 exploit/CVE-2021-0920/trigger/target
